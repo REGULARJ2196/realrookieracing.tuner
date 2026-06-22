@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Driver Hub</title>
+    <style>
+        :root { --bg: #0a0a0a; --panel: #1a1a1a; --accent: #3498db; --text: #e0e0e0; --dim: #555; --owned-color: #f1c40f; }
+        * { box-sizing: border-box; }
+        
+        @keyframes chameleon { 
+            0% { border-color: #ff00ff; } 50% { border-color: #00ffff; } 100% { border-color: #ff00ff; }
+        }
+
+        body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; }
+        header { flex: 0 0 65px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: #000; border-bottom: 2px solid #333; }
+        
+        .main-layout { flex: 1; display: flex; overflow: hidden; }
+        .sidebar { width: 220px; padding: 15px; background: var(--panel); border-right: 1px solid #333; font-size: 0.85em; }
+        
+        .car-container { flex: 1; padding: 10px; overflow-y: auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-content: start; }
+        
+        .car-card { background: var(--panel); padding: 8px; border-radius: 6px; border-left: 4px solid; animation: chameleon 10s infinite alternate; font-size: 0.65em; position: relative; }
+        .car-card.owned { border-left-color: var(--owned-color) !important; box-shadow: inset 0 0 10px rgba(241, 196, 15, 0.2); animation: none; }
+        
+        .car-card h3 { margin: 0 0 4px 0; font-size: 1.05em; display: flex; justify-content: space-between; }
+        .owned-tag { color: var(--owned-color); font-weight: bold; }
+        
+        .pg-bar { height: 6px; background: #333; margin: 4px 0; border-radius: 2px; overflow: hidden; }
+        .pg-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+        
+        button { cursor: pointer; padding: 3px 6px; border: none; background: var(--accent); color: white; border-radius: 2px; font-size: 0.9em; margin: 2px 0; display: block; width: 100%; }
+        button:disabled { background: var(--dim); cursor: not-allowed; opacity: 0.6; }
+        button.sell { background: #e74c3c; }
+        button.cm { background: #27ae60; }
+        button.dl { background: #f39c12; }
+        button.reset { background: #7f8c8d; font-size: 0.7em; display: inline !important; width: auto; margin-left: 5px;}
+    </style>
+</head>
+<body>
+
+<header>
+    <h1 style="font-size: 1.2em;">Driver Hub</h1>
+    <div style="font-size: 0.9em; text-align: right;">
+        <div>
+            Wallet: $<span id="wallet-balance">5000</span>
+            <button class="reset" onclick="resetWallet()">Reset</button>
+        </div>
+        <!-- This links directly to your calendar.html file -->
+        <a href="calendar.html" style="color: var(--accent); font-size: 0.85em; text-decoration: none; margin-top: 2px; display: block;">View Calendar</a>
+    </div>
+</header>
+
+<div class="main-layout">
+    <div class="sidebar">
+        <h3>Licensing</h3>
+        <p>E: Beginner</p>
+        <p>D: Quick</p>
+        <p>C: Average</p>
+        <p>B: Phenom</p>
+        <p>A+: Elite</p>
+        <hr style="border:0; border-top:1px solid #333;">
+        <p><strong>PI Cap: 300</strong></p>
+    </div>
+    
+    <div class="car-container" id="car-list"></div>
+</div>
+
+<script>
+    if (!localStorage.getItem('wallet')) localStorage.setItem('wallet', 5000);
+    
+    let cars = [
+        { name: "Trabant 601", class: "E", price: 500, pi: 150, owned: false, url: "https://www.overtake.gg/search/1/?q=Trabant+601+assetto+corsa" },
+        { name: "Austin Mini", class: "E", price: 750, pi: 160, owned: false, url: "https://www.overtake.gg/search/1/?q=Austin+Mini+assetto+corsa" },
+        { name: "Fiat 500 Abarth", class: "E", price: 600, pi: 155, owned: false, url: "https://www.overtake.gg/search/1/?q=Fiat+500+Abarth+assetto+corsa" },
+        { name: "NSU Prinz", class: "E", price: 550, pi: 145, owned: false, url: "https://www.overtake.gg/search/1/?q=NSU+Prinz+assetto+corsa" },
+        { name: "Subaru 360", class: "E", price: 450, pi: 140, owned: false, url: "https://www.overtake.gg/search/1/?q=Subaru+360+assetto+corsa" },
+        { name: "Citroen 2CV", class: "E", price: 500, pi: 130, owned: false, url: "https://www.overtake.gg/downloads/citroen-2cv-uk-club-class.63818/" },
+        { name: "Skoda 110R", class: "E", price: 800, pi: 170, owned: false, url: "https://www.overtake.gg/search/1/?q=Skoda+110R+assetto+corsa" },
+        { name: "Sebring Sprite", class: "D", price: 1200, pi: 250, owned: false, url: "https://www.overtake.gg/search/1/?q=Sebring+Sprite+assetto+corsa" },
+        { name: "Daihatsu Storia", class: "D", price: 1500, pi: 260, owned: false, url: "https://www.overtake.gg/search/1/?q=Daihatsu+Storia+assetto+corsa" },
+        { name: "Ford Sierra RS", class: "D", price: 2000, pi: 275, owned: false, url: "https://www.overtake.gg/search/1/?q=Ford+Sierra+RS+assetto+corsa" },
+        { name: "Datsun 510", class: "D", price: 1800, pi: 265, owned: false, url: "https://www.overtake.gg/search/1/?q=Datsun+510+assetto+corsa" },
+        { name: "Volvo 240 GL", class: "D", price: 1400, pi: 240, owned: false, url: "https://www.overtake.gg/search/1/?q=Volvo+240+GL+assetto+corsa" },
+        { name: "Honda del Sol", class: "D", price: 2300, pi: 270, owned: false, url: "https://www.overtake.gg/search/1/?q=Honda+del+Sol+assetto+corsa" },
+        { name: "Alfa Romeo Giulia", class: "D", price: 2200, pi: 285, owned: false, url: "https://www.overtake.gg/search/1/?q=Alfa+Romeo+Giulia+assetto+corsa" }
+    ];
+
+    function updateHub() {
+        document.getElementById('wallet-balance').innerText = localStorage.getItem('wallet');
+        const list = document.getElementById('car-list');
+        list.innerHTML = cars.map((car, i) => `
+            <div class="car-card ${car.owned ? 'owned' : ''}">
+                <h3>
+                    ${car.name} 
+                    ${car.owned ? '<span class="owned-tag">(Owned)</span>' : ''}
+                </h3>
+                <div style="font-size: 0.9em;">(${car.class})</div>
+                <div class="pg-bar"><div class="pg-fill" style="width:${(car.pi/300)*100}%"></div></div>
+                <button onclick="buyCar(${i})" ${car.owned ? 'disabled' : ''}>${car.owned ? 'Owned' : 'Buy ($'+car.price+')'}</button>
+                <button onclick="upgrade(${i})" ${!car.owned ? 'disabled' : ''}>Upgrade ($500)</button>
+                <button class="dl" onclick="window.open('${car.url}')" ${!car.owned ? 'disabled' : ''}>Download (Overtake)</button>
+                <button class="cm" onclick="window.location.href='ac://install/${encodeURIComponent(car.name)}'" ${!car.owned ? 'disabled' : ''}>Install to CM</button>
+                <button class="sell" onclick="sellCar(${i})" ${!car.owned ? 'disabled' : ''}>Sell</button>
+            </div>
+        `).join('');
+    }
+
+    function resetWallet() {
+        if(confirm("Reset progress?")) {
+            localStorage.setItem('wallet', 5000);
+            cars.forEach(c => c.owned = false);
+            updateHub();
+        }
+    }
+
+    function buyCar(i) {
+        let wallet = parseInt(localStorage.getItem('wallet'));
+        if (wallet >= cars[i].price) {
+            localStorage.setItem('wallet', wallet - cars[i].price);
+            cars[i].owned = true;
+            updateHub();
+        } else { alert("Insufficient funds!"); }
+    }
+
+    function sellCar(i) {
+        let wallet = parseInt(localStorage.getItem('wallet'));
+        localStorage.setItem('wallet', wallet + cars[i].price);
+        cars[i].owned = false;
+        updateHub();
+    }
+
+    function upgrade(i) {
+        let wallet = parseInt(localStorage.getItem('wallet'));
+        const boost = (cars[i].class === 'E') ? 20 : 10;
+        if (wallet >= 500 && cars[i].pi + boost <= 300) {
+            localStorage.setItem('wallet', wallet - 500);
+            cars[i].pi += boost;
+            updateHub();
+        } else {
+            alert(cars[i].pi + boost > 300 ? "PI Cap Reached!" : "Insufficient funds!");
+        }
+    }
+    window.onload = updateHub;
+</script>
+</body>
+</html>

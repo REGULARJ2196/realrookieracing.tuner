@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Race Calendar</title>
+    <style>
+        :root { 
+            --bg: #0a0a0a; --panel: #1a1a1a; --accent: #3498db; --text: #e0e0e0; 
+            --red: #e74c3c; --blue: #3498db; --white: #ffffff; 
+        }
+        body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; padding: 20px; }
+        
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        h1 { border-bottom: 2px solid #333; padding-bottom: 10px; margin-top: 0; }
+        
+        /* Track Grouping */
+        .track-group { background: var(--panel); padding: 20px; border-radius: 6px; border-left: 4px solid var(--accent); }
+        .track-img { width: 100%; max-height: 150px; object-fit: contain; display: block; margin-bottom: 20px; }
+        
+        /* Schedule */
+        .schedule-item { background: #000; padding: 10px; margin: 8px 0; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid; font-size: 0.9em; }
+        .btn { cursor: pointer; padding: 6px 10px; border: none; border-radius: 4px; color: #fff; font-weight: bold; font-size: 0.75em; }
+        .reg-btn { background: var(--accent); }
+        .reg-btn.active { background: #27ae60; }
+        a { color: var(--accent); text-decoration: none; font-size: 0.8em; }
+        .back-link { display: inline-block; margin-bottom: 20px; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<a href="index.html" class="back-link">← Back to Hub</a>
+
+<div class="container">
+    <!-- Watkins Column -->
+    <div class="track-group">
+        <h1>Watkins Glen</h1>
+        <img src="watkins.png" alt="Watkins Glen" class="track-img">
+        <div id="watkins-schedule"></div>
+    </div>
+
+    <!-- Brands Column -->
+    <div class="track-group">
+        <h1>Brands Hatch</h1>
+        <img src="brands.png" alt="Brands Hatch" class="track-img">
+        <div id="brands-schedule"></div>
+    </div>
+</div>
+
+<script>
+    const schedule = [
+        { id: 'w_p', track: 'Watkins', name: "Practice", time: "19:00", color: 'var(--red)', server: "ac://server-watkins-practice" },
+        { id: 'w_q', track: 'Watkins', name: "Qualifying", time: "19:15", color: 'var(--white)', server: "ac://server-watkins-race" },
+        { id: 'w_r', track: 'Watkins', name: "Race", time: "19:30", color: 'var(--blue)', server: "ac://server-watkins-race" },
+        { id: 'b_p', track: 'Brands', name: "Practice", time: "19:00", color: 'var(--red)', server: "ac://server-brands-practice" },
+        { id: 'b_q', track: 'Brands', name: "Qualifying", time: "19:15", color: 'var(--white)', server: "ac://server-brands-race" },
+        { id: 'b_r', track: 'Brands', name: "Race", time: "19:30", color: 'var(--blue)', server: "ac://server-brands-race" }
+    ];
+
+    function renderSchedule() {
+        // Watkins
+        const watkinsContainer = document.getElementById('watkins-schedule');
+        watkinsContainer.innerHTML = schedule.filter(e => e.track === 'Watkins').map(event => createItem(event)).join('');
+
+        // Brands
+        const brandsContainer = document.getElementById('brands-schedule');
+        brandsContainer.innerHTML = schedule.filter(e => e.track === 'Brands').map(event => createItem(event)).join('');
+    }
+
+    function createItem(event) {
+        const isRegistered = localStorage.getItem('reg_' + event.id) === 'true';
+        // 24-hour format strictly
+        return `
+            <div class="schedule-item" style="border-color: ${event.color}">
+                <div>
+                    <strong style="color: ${event.color}">${event.name}</strong><br>
+                    <small>${event.time}</small>
+                </div>
+                <div style="text-align: right;">
+                    <a href="${event.server}" style="display:block; margin-bottom: 5px;">Join Server</a>
+                    <button class="btn reg-btn ${isRegistered ? 'active' : ''}" onclick="toggleReg('${event.id}')">
+                        ${isRegistered ? 'Registered' : 'Register'}
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    function toggleReg(id) {
+        const current = localStorage.getItem('reg_' + id) === 'true';
+        localStorage.setItem('reg_' + id, !current);
+        renderSchedule();
+    }
+
+    renderSchedule();
+</script>
+</body>
+</html>
